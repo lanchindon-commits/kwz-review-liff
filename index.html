@@ -25,6 +25,9 @@
     width: 100%;
     text-align: center;
     box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   .icon {
     font-size: 40px;
@@ -52,6 +55,36 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .error { color: #e05555; font-size: 13px; margin-top: 16px; }
+  .action-btn {
+    display: block;
+    width: min(100%, 320px);
+    margin: 20px auto 0;
+    padding: 18px 24px;
+    border: none;
+    border-radius: 14px;
+    background: #06C755;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(6, 199, 85, 0.28);
+  }
+  .action-btn:active {
+    transform: scale(0.97);
+  }
+  .action-btn:disabled {
+    background: #a8d8b8;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  #completeBtn {
+    background: #1976d2;
+  }
+  #completeBtn:disabled {
+    background: #9bbce0;
+  }
 </style>
 </head>
 <body>
@@ -59,57 +92,48 @@
     <div class="icon">🙏</div>
     <h1 id="title">準備中，請稍候</h1>
     <p id="msg">正在為您跳轉到 Google 留評論頁面...</p>
-    <div class="spinner" id="spinner"></div><button id="reviewBtn" style="display:none;">
-  前往 Google 評論
-</button>
-
-<button id="completeBtn" style="display:none;">
-  我已完成評論
-</button>
+    <div class="spinner" id="spinner"></div>
+    <button id="reviewBtn" class="action-btn" style="display:none;">
+      前往 Google 評論
+    </button>
+    <button id="completeBtn" class="action-btn" style="display:none;">
+      我已完成評論
+    </button>
     <div class="error" id="error" style="display:none;"></div>
   </div>
-
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
 (function () {
   const LIFF_ID = "2011180142-9hPK6LDB";
   const WEBHOOK_URL =
     "https://hook.us2.make.com/c7xbwkmgps9knd3qbexdnbfp1g4lgmv2";
-
   const REVIEW_LINKS = {
     rendian: "https://maps.google.com/maps?cid=10318263427318893725",
     jinlisheng: "https://maps.google.com/maps?cid=10485166000432745872",
     jinwangsheng: "https://maps.google.com/maps?cid=9423973832836101163"
   };
-
   let store = "";
   let userId = "";
   let reviewUrl = "";
-
   const titleEl = document.getElementById("title");
   const msgEl = document.getElementById("msg");
   const spinnerEl = document.getElementById("spinner");
   const errorEl = document.getElementById("error");
   const reviewBtn = document.getElementById("reviewBtn");
   const completeBtn = document.getElementById("completeBtn");
-
   function getStoreParam() {
     const params = new URLSearchParams(window.location.search);
-
     if (params.get("s")) {
       return params.get("s");
     }
-
     if (liff.state) {
       const stateParams = new URLSearchParams(
         liff.state.replace(/^\?/, "")
       );
       return stateParams.get("s");
     }
-
     return null;
   }
-
   function showError(message) {
     spinnerEl.style.display = "none";
     titleEl.textContent = "發生問題";
@@ -117,12 +141,10 @@
     errorEl.style.display = "block";
     errorEl.textContent = message;
   }
-
   function showMessage(message) {
     spinnerEl.style.display = "none";
     msgEl.textContent = message;
   }
-
   async function sendWebhook() {
     const response = await fetch(WEBHOOK_URL, {
       method: "POST",
@@ -134,28 +156,22 @@
         userId: userId
       })
     });
-
     const text = await response.text();
-
     let result;
     try {
       result = JSON.parse(text);
     } catch (error) {
       throw new Error("Make 回傳的內容不是有效 JSON：" + text);
     }
-
     if (!response.ok) {
       throw new Error(result.message || "Webhook 回傳錯誤");
     }
-
     return result;
   }
-
   async function openReviewPage() {
     try {
       reviewBtn.disabled = true;
       reviewBtn.textContent = "正在開啟評論頁面...";
-
       if (liff.isInClient()) {
         liff.openWindow({
           url: reviewUrl,
@@ -164,11 +180,9 @@
       } else {
         window.open(reviewUrl, "_blank");
       }
-
       reviewBtn.style.display = "none";
       completeBtn.style.display = "block";
       completeBtn.disabled = false;
-
       titleEl.textContent = "完成評論後返回此頁面";
       showMessage("請完成 Google 評論，再按下「我已完成評論」。");
     } catch (error) {
@@ -177,15 +191,12 @@
       showError(error.message);
     }
   }
-
   async function completeReview() {
     try {
       completeBtn.disabled = true;
       completeBtn.textContent = "正在驗證評論...";
       showMessage("正在確認 Google 評論，請稍候。");
-
       const result = await sendWebhook();
-
       if (result.status === "coupon_sent") {
         titleEl.textContent = "優惠券已發送";
         showMessage("優惠券已透過 LINE 發送，請回到 LINE 查看。");
@@ -211,49 +222,39 @@
       showError(error.message);
     }
   }
-
   async function run() {
     try {
       await liff.init({ liffId: LIFF_ID });
-
       if (!liff.isLoggedIn()) {
         liff.login();
         return;
       }
-
       store = getStoreParam();
       reviewUrl = REVIEW_LINKS[store];
-
       if (!store || !reviewUrl) {
         showError("店家連結無效，請重新點擊店家傳送的連結。");
         return;
       }
-
       const profile = await liff.getProfile();
       userId = profile.userId;
-
       const result = await sendWebhook();
-
       if (
         result.status !== "pending_review" &&
         result.status !== "already_claimed"
       ) {
         throw new Error("綁定失敗：" + (result.status || "未知錯誤"));
       }
-
       spinnerEl.style.display = "none";
       titleEl.textContent = "請留下 Google 評論";
       msgEl.textContent = "完成評論後，請返回此頁面按下確認按鈕。";
       reviewBtn.style.display = "block";
       reviewBtn.disabled = false;
-
       reviewBtn.addEventListener("click", openReviewPage);
       completeBtn.addEventListener("click", completeReview);
     } catch (error) {
       showError(error.message || "載入失敗，請稍後再試。");
     }
   }
-
   run();
 })();
 </script>
