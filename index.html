@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>前往留評論</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", sans-serif;
+    background: #f5f7f5;
+    color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  .icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 18px;
+    margin: 0 0 8px;
+    color: #06C755;
+  }
+  p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+    margin: 0 0 4px;
+  }
+  .spinner {
+    margin: 20px auto 0;
+    width: 28px;
+    height: 28px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #06C755;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { color: #e05555; font-size: 13px; margin-top: 16px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🙏</div>
+    <h1 id="title">準備中，請稍候</h1>
+    <p id="msg">正在為您跳轉到 Google 留評論頁面...</p>
+    <div class="spinner" id="spinner"></div>
+    <div class="error" id="error" style="display:none;"></div>
+  </div>
+
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+(function () {
+  var LIFF_ID = "REPLACE_LIFF_ID";
+  var WEBHOOK_URL = "https://hook.us2.make.com/c7xbwkmgps9knd3qbexdnbfp1g4lgmv2";
+  var REVIEW_LINKS = {
+    rendian: "https://search.google.com/local/writereview?placeid=ChIJaZyDwe6nQjQRi6A-LOvVMY8",
+    jinlisheng: "https://search.google.com/local/writereview?placeid=ChIJgQL6kPqnQjQRkA3MsuzKgpE",
+    jinwangsheng: "https://search.google.com/local/writereview?placeid=ChIJnxIsY42nQjQRK7TFRkWuyII"
+  };
+
+  function showError(text) {
+    document.getElementById("spinner").style.display = "none";
+    document.getElementById("title").textContent = "發生問題";
+    document.getElementById("msg").textContent = "";
+    var err = document.getElementById("error");
+    err.style.display = "block";
+    err.textContent = text;
+  }
+
+  function getStoreParam() {
+    var params = new URLSearchParams(window.location.search);
+    return params.get("s") || (liff.state ? new URLSearchParams(liff.state.replace(/^\?/, "")).get("s") : null);
+  }
+
+  async function run() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      var store = getStoreParam();
+      var target = REVIEW_LINKS[store];
+
+      if (!target) {
+        showError("連結有誤，請重新點擊店家傳送的訊息，或聯絡店家協助處理。");
+        return;
+      }
+
+      var profile = await liff.getProfile();
+      var userId = profile.userId;
+
+      try {
+        await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: userId, store: store })
+        });
+      } catch (e) {
+        // 綁定失敗也不擋客人留評論，只是可能無法自動核發優惠券，之後可人工處理
+      }
+
+      window.location.href = target;
+    } catch (err) {
+      showError("載入失敗，請確認網路連線後重新整理，或聯絡店家協助處理。");
+    }
+  }
+
+  run();
+})();
+</script>
+</body>
+</html>
