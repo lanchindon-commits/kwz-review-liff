@@ -68,10 +68,13 @@
 (function () {
   var LIFF_ID = "2011180142-9hPK6LDB";
   var WEBHOOK_URL = "https://hook.us2.make.com/c7xbwkmgps9knd3qbexdnbfp1g4lgmv2";
+  // 改用 Google 地圖的 cid 連結：iOS / Android 都會嘗試用「Google 地圖 App」開啟（如果有安裝），
+  // 用 App 開啟時通常已經是登入狀態，比起純網頁版的留評論連結更不容易被要求重新登入 Google。
+  // 客人進去後在店家頁面點「評論」→「撰寫評論」即可，比直接跳留言框多 1-2 步，但登入機率低很多。
   var REVIEW_LINKS = {
-    rendian: "https://search.google.com/local/writereview?placeid=ChIJaZyDwe6nQjQRi6A-LOvVMY8",
-    jinlisheng: "https://search.google.com/local/writereview?placeid=ChIJgQL6kPqnQjQRkA3MsuzKgpE",
-    jinwangsheng: "https://search.google.com/local/writereview?placeid=ChIJnxIsY42nQjQRK7TFRkWuyII"
+    rendian: "https://maps.google.com/maps?cid=10318263427318849675",
+    jinlisheng: "https://maps.google.com/maps?cid=10485166000432745872",
+    jinwangsheng: "https://maps.google.com/maps?cid=9423973832836101163"
   };
 
   function showError(text) {
