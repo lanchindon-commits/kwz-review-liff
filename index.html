@@ -118,7 +118,14 @@
         // 綁定失敗也不擋客人留評論，只是可能無法自動核發優惠券，之後可人工處理
       }
 
-      window.location.href = target;
+      // 強制用手機原本的瀏覽器（Safari / Chrome）開啟，而不是 LINE 內建瀏覽器，
+      // 這樣才會沿用手機本來的 Google 登入狀態，甚至直接跳轉到 Google 地圖 App，不用重新登入。
+      if (liff.isInClient()) {
+        liff.openWindow({ url: target, external: true });
+        liff.closeWindow();
+      } else {
+        window.location.href = target;
+      }
     } catch (err) {
       showError("載入失敗，請確認網路連線後重新整理，或聯絡店家協助處理。");
     }
