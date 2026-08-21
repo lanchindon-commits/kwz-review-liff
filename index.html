@@ -79,11 +79,15 @@
     cursor: not-allowed;
     box-shadow: none;
   }
-  #completeBtn {
-    background: #1976d2;
-  }
-  #completeBtn:disabled {
-    background: #9bbce0;
+  .banner {
+    width: 100%;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.7;
+    margin-top: 18px;
   }
 </style>
 </head>
@@ -96,9 +100,9 @@
     <button id="reviewBtn" class="action-btn" style="display:none;">
       前往 Google 評論
     </button>
-    <button id="completeBtn" class="action-btn" style="display:none;">
-      我已完成評論
-    </button>
+    <div class="banner" id="banner" style="display:none;">
+      感謝您的支持，評論回覆後，系統將會自動比對，隔天發送優惠券給您
+    </div>
     <div class="error" id="error" style="display:none;"></div>
   </div>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -121,7 +125,7 @@
   const spinnerEl = document.getElementById("spinner");
   const errorEl = document.getElementById("error");
   const reviewBtn = document.getElementById("reviewBtn");
-  const completeBtn = document.getElementById("completeBtn");
+  const bannerEl = document.getElementById("banner");
   function getStoreParam() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("s")) {
@@ -170,7 +174,7 @@
     }
     return result;
   }
-  async function openReviewPage() {
+  function openReviewPage() {
     try {
       reviewBtn.disabled = true;
       reviewBtn.textContent = "正在開啟評論頁面...";
@@ -182,45 +186,12 @@
       } else {
         window.open(reviewUrl, "_blank");
       }
+      titleEl.textContent = "感謝您留下評論";
+      msgEl.textContent = "完成評論後，不需要再回來這個頁面。";
       reviewBtn.style.display = "none";
-      completeBtn.style.display = "block";
-      completeBtn.disabled = false;
-      titleEl.textContent = "完成評論後返回此頁面";
-      showMessage("請完成 Google 評論，再按下「我已完成評論」。");
     } catch (error) {
       reviewBtn.disabled = false;
       reviewBtn.textContent = "前往 Google 評論";
-      showError(error.message);
-    }
-  }
-  async function completeReview() {
-    try {
-      completeBtn.disabled = true;
-      completeBtn.textContent = "正在驗證評論...";
-      showMessage("正在確認 Google 評論，請稍候。");
-      const result = await sendWebhook();
-      if (result.status === "coupon_sent") {
-        titleEl.textContent = "優惠券已發送";
-        showMessage("優惠券已透過 LINE 發送，請回到 LINE 查看。");
-        completeBtn.style.display = "none";
-      } else if (result.status === "review_not_found") {
-        titleEl.textContent = "尚未找到評論";
-        showMessage("目前還沒有查到新的 Google 評論，請確認評論已成功送出後再試一次。");
-        completeBtn.disabled = false;
-        completeBtn.textContent = "重新驗證評論";
-      } else if (result.status === "already_claimed") {
-        titleEl.textContent = "優惠券已領取";
-        showMessage("這個 LINE 帳號已經領取過優惠券。");
-        completeBtn.style.display = "none";
-      } else {
-        titleEl.textContent = "已收到請求";
-        showMessage("系統回應：" + result.status);
-        completeBtn.disabled = false;
-        completeBtn.textContent = "重新驗證評論";
-      }
-    } catch (error) {
-      completeBtn.disabled = false;
-      completeBtn.textContent = "重新驗證評論";
       showError(error.message);
     }
   }
@@ -241,19 +212,22 @@
       userId = profile.userId;
       displayName = profile.displayName || "";
       const result = await sendWebhook();
-      if (
-        result.status !== "pending_review" &&
-        result.status !== "already_claimed"
-      ) {
+      if (result.status === "already_claimed") {
+        spinnerEl.style.display = "none";
+        titleEl.textContent = "優惠券已領取";
+        msgEl.textContent = "這個 LINE 帳號已經領取過優惠券囉，感謝您的支持！";
+        return;
+      }
+      if (result.status !== "pending_review") {
         throw new Error("綁定失敗：" + (result.status || "未知錯誤"));
       }
       spinnerEl.style.display = "none";
       titleEl.textContent = "請留下 Google 評論";
-      msgEl.textContent = "完成評論後，請返回此頁面按下確認按鈕。";
+      msgEl.textContent = "點擊下方按鈕前往留評論。";
       reviewBtn.style.display = "block";
       reviewBtn.disabled = false;
+      bannerEl.style.display = "block";
       reviewBtn.addEventListener("click", openReviewPage);
-      completeBtn.addEventListener("click", completeReview);
     } catch (error) {
       showError(error.message || "載入失敗，請稍後再試。");
     }
