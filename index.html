@@ -108,12 +108,13 @@
   const WEBHOOK_URL =
     "https://hook.us2.make.com/c7xbwkmgps9knd3qbexdnbfp1g4lgmv2";
   const REVIEW_LINKS = {
-    rendian: "https://maps.google.com/maps?cid=10318263427318893725",
-    jinlisheng: "https://maps.google.com/maps?cid=10485166000432745872",
-    jinwangsheng: "https://maps.google.com/maps?cid=9423973832836101163"
+    rendian: "https://g.page/r/CYugPizr1TGPEBM/review",
+    jinlisheng: "https://g.page/r/CZANzLLsyoKREBM/review",
+    jinwangsheng: "https://g.page/r/CSu0xUZFrsiCEBM/review"
   };
   let store = "";
   let userId = "";
+  let displayName = "";
   let reviewUrl = "";
   const titleEl = document.getElementById("title");
   const msgEl = document.getElementById("msg");
@@ -153,7 +154,8 @@
       },
       body: JSON.stringify({
         store: store,
-        userId: userId
+        userId: userId,
+        displayName: displayName
       })
     });
     const text = await response.text();
@@ -237,6 +239,7 @@
       }
       const profile = await liff.getProfile();
       userId = profile.userId;
+      displayName = profile.displayName || "";
       const result = await sendWebhook();
       if (
         result.status !== "pending_review" &&
